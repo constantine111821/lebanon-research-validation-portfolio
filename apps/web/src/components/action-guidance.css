@@ -1,0 +1,47 @@
+/* Shared procedural cue: one brief, non-moving highlight; no pulsing decisions. */
+button[data-procedural-cue="next"] {
+  animation: procedural-next 1.7s ease-out 1;
+}
+@keyframes procedural-next {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  25%,
+  65% {
+    box-shadow: 0 0 0 4px #86b4a3a6;
+  }
+}
+button[data-procedural-hint] {
+  position: relative;
+}
+button[data-procedural-hint]:not([data-procedural-hint-dismissed]):is(
+    :hover,
+    :focus-visible
+  )::after {
+  content: attr(data-procedural-hint);
+  position: absolute;
+  z-index: 60;
+  bottom: 100%;
+  left: 0;
+  width: max-content;
+  max-width: min(265px, 75vw);
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: #fff;
+  background: #233e35;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 400;
+  text-align: left;
+  white-space: normal;
+  pointer-events: auto;
+  box-shadow: 0 3px 10px #0002;
+}
+@media (prefers-reduced-motion: reduce) {
+  button[data-procedural-cue="next"] {
+    animation: none;
+    outline: 2px solid #86b4a3;
+    outline-offset: 3px;
+  }
+}

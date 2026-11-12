@@ -1,0 +1,68 @@
+/* V2.3: Supervisor Hub and its drill-down only. The researcher interface is unchanged. */
+#supervisor-hub .supervisor-metrics{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:16px 0}
+#supervisor-hub .supervisor-metric{padding:15px 13px;box-shadow:none}
+#supervisor-hub .supervisor-metric strong{font-size:25px}
+#supervisor-hub .supervisor-secondary-counts{display:flex;flex-wrap:wrap;gap:5px 18px;padding:10px 0;font-size:12px;color:var(--muted)}
+#supervisor-hub .supervisor-queue-tools{margin:14px 0 8px}
+#supervisor-hub .supervisor-queue-tools>label:not(.grow){max-width:270px}
+#supervisor-hub label>select,#supervisor-incident-detail label>select{display:block;width:100%}
+#supervisor-hub .supervisor-table-scroll{overflow:auto;border:1px solid var(--line);border-radius:9px;background:#fff}
+#supervisor-hub .supervisor-queue-table,#supervisor-hub .supervisor-team-table{width:100%;border-collapse:collapse;font-size:12px}
+#supervisor-hub .supervisor-queue-table{min-width:1090px;table-layout:fixed}
+#supervisor-hub table th{text-align:left;background:#f6f8f5;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.3px;padding:12px 10px;vertical-align:bottom}
+#supervisor-hub table td{vertical-align:top;padding:14px 10px;border-top:1px solid var(--line);overflow-wrap:anywhere}
+#supervisor-hub table small{display:block;font-size:10px;color:var(--muted);margin-top:5px}
+#supervisor-hub .supervisor-queue-table th:nth-child(1){width:12%}
+#supervisor-hub .supervisor-queue-table th:nth-child(2){width:21%}
+#supervisor-hub .supervisor-queue-table th:nth-child(3){width:11%}
+#supervisor-hub .supervisor-queue-table th:nth-child(4){width:8%}
+#supervisor-hub .supervisor-queue-table th:nth-child(5){width:17%}
+#supervisor-hub .supervisor-queue-table th:nth-child(6){width:10%}
+#supervisor-hub .supervisor-queue-table th:nth-child(7){width:12%}
+#supervisor-hub .supervisor-queue-table th:nth-child(8){width:9%}
+#supervisor-hub .supervisor-queue-table td>.pill{margin-top:7px}
+#supervisor-hub .supervisor-queue-table progress{display:block;width:100%;height:5px;margin-top:10px;accent-color:var(--teal)}
+#supervisor-hub .supervisor-issue-list{margin:0;padding-left:14px;font-size:11px}
+#supervisor-hub .supervisor-issue-list li{margin:0 0 5px}
+#supervisor-hub .supervisor-row-actions{display:grid;gap:8px}
+#supervisor-hub .supervisor-row-actions button{font-size:11px;padding:6px;min-height:32px}
+#supervisor-hub td>button.text-button{display:block;margin-top:7px;font-size:11px}
+#supervisor-hub .supervisor-activity-filters,#supervisor-incident-detail .supervisor-activity-filters{margin:14px 0}
+#supervisor-hub .supervisor-activity-filters label,#supervisor-incident-detail .supervisor-activity-filters label{flex:1;min-width:140px;max-width:320px}
+#supervisor-hub .supervisor-activity-feed,#supervisor-incident-detail .supervisor-activity-feed{list-style:none;padding:0;margin:0}
+#supervisor-hub .activity-row .secondary-details,#supervisor-incident-detail .activity-row .secondary-details{margin-top:6px;border:0;background:transparent}
+#supervisor-hub .activity-row summary,#supervisor-incident-detail .activity-row summary{padding:3px 0;font-size:11px;font-weight:500}
+#supervisor-incident-detail .supervisor-readiness-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+#supervisor-incident-detail .supervisor-readiness-grid>div{background:#f6f8f5;border:1px solid var(--line);border-radius:7px;padding:12px}
+#supervisor-incident-detail .supervisor-readiness-grid dt{font-size:11px;color:var(--muted)}
+#supervisor-incident-detail .supervisor-readiness-grid dd{margin:4px 0 0;font-size:19px;font-weight:750}
+#supervisor-incident-detail .supervisor-blockers{list-style:none;margin:0;padding:0}
+#supervisor-incident-detail .readiness-blocker{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}
+#supervisor-incident-detail .readiness-blocker button{font-size:11px;min-height:33px;flex-shrink:0}
+#supervisor-incident-detail .supervisor-finding-group{border:1px solid var(--line);border-radius:9px;background:#fff;padding:18px;margin-top:14px}
+#supervisor-incident-detail .supervisor-finding-group>h3{font-size:15px;color:var(--teal);margin:0 0 8px}
+#supervisor-incident-detail .supervisor-finding{padding:14px 0}
+#supervisor-incident-detail .supervisor-finding:last-child{border-bottom:0}
+#supervisor-incident-detail .supervisor-finding[data-current-supported-review="true"] {
+  padding: 14px;
+  border-bottom: 1px solid #2d774b;
+  border-radius: 9px;
+}
+#supervisor-incident-detail .supervisor-finding-head{display:flex;justify-content:space-between;align-items:start;gap:14px}
+#supervisor-incident-detail .supervisor-finding-head h3{font-size:15px;margin:0}
+#supervisor-incident-detail .supervisor-finding>p{margin:8px 0;font-size:13px}
+#supervisor-incident-detail .supervisor-current-finding{background:#f6f8f5;padding:9px 12px;border-radius:6px}
+#supervisor-incident-detail .supervisor-current-finding span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}
+#supervisor-incident-detail .supervisor-finding>details{margin-top:10px}
+#supervisor-incident-detail .supervisor-finding>details>summary{font-size:12px;padding:10px 12px}
+#supervisor-incident-detail .source-card{padding:13px;border:1px solid var(--line);border-radius:7px;margin:10px 0}
+#supervisor-incident-detail .supervisor-finding .source-card blockquote{max-height:220px;overflow:auto}
+@media(max-width:1100px){#supervisor-hub .supervisor-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){#supervisor-hub .supervisor-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}#supervisor-hub .supervisor-queue-tools>label{max-width:none;width:100%}#supervisor-incident-detail .supervisor-readiness-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#supervisor-incident-detail .readiness-blocker{display:block}#supervisor-incident-detail .readiness-blocker button{margin-top:8px}}
+
+#supervisor-hub .supervisor-queue-table .supervisor-case-title{font-size:12px;line-height:1.45;display:block;margin:0;color:var(--ink);font-weight:750}
+#supervisor-hub .supervisor-queue-table .supervisor-case-title:hover{color:var(--teal)}
+#supervisor-incident-detail .page-head>button{align-self:flex-start}
+/* V2.4: three secondary Phase 2 counts; the four-area Hub and one queue stay intact. */
+#supervisor-hub .supervisor-phase2-counts{display:flex;align-items:center;flex-wrap:wrap;gap:7px 18px;font-size:12px;color:var(--muted);padding:10px 0;border-top:1px solid var(--line)}
+#supervisor-hub .supervisor-phase2-counts .text-button{font-size:12px}

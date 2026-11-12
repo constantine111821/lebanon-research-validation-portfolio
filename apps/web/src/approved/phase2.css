@@ -1,0 +1,38 @@
+/* V2.4 additive Phase 2 output only; researcher layout remains frozen. */
+#validated-incidents .phase2-tools{margin:18px 0 10px}
+#validated-incidents .phase2-tools select{display:block;min-width:215px}
+#validated-incidents .phase2-table-scroll{overflow:auto;border:1px solid var(--line);border-radius:9px;background:#fff}
+#validated-incidents table{width:100%;min-width:1260px;border-collapse:collapse;font-size:12px;table-layout:fixed}
+#validated-incidents th{padding:12px;text-align:left;color:var(--muted);background:#f6f8f5;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+#validated-incidents td{vertical-align:top;border-top:1px solid var(--line);padding:14px 12px;overflow-wrap:anywhere}
+#validated-incidents th:nth-child(1){width:16%}#validated-incidents th:nth-child(2){width:13%}#validated-incidents th:nth-child(3){width:15%}#validated-incidents th:nth-child(4){width:10%}#validated-incidents th:nth-child(5){width:10%}#validated-incidents th:nth-child(6){width:14%}#validated-incidents th:nth-child(7){width:14%}#validated-incidents th:nth-child(8){width:8%}
+#validated-incidents td small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+#validated-incidents td button{margin-top:10px;font-size:11px;padding:7px}
+#validated-incidents td .pill{font-size:10px;margin:5px 3px 0 0}
+#validated-incidents .phase2-coordinates{display:grid;gap:3px;font-variant-numeric:tabular-nums;margin-top:9px}
+#validated-incidents .phase2-effect-expand{font-size:11px;margin-top:10px}
+#validated-incidents .phase2-effect-expand summary{color:var(--teal);cursor:pointer}
+#validated-incidents .phase2-effect-expand dt{font-weight:700;margin-top:12px}
+#validated-incidents .phase2-effect-expand dd{margin:3px 0}
+#validated-incidents .phase2-empty{padding:38px;max-width:850px;margin:25px 0}
+#validated-incidents .phase2-empty h2{font-size:22px}
+#validated-incidents .page-head>div:last-child{align-self:flex-start}
+.phase2-details-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.phase2-details-grid>div{background:#f6f8f5;border:1px solid var(--line);border-radius:6px;padding:13px}
+.phase2-details-grid dt{color:var(--muted);font-size:11px;margin-bottom:6px}
+.phase2-details-grid dd{margin:0;font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.phase2-details-grid dd small{display:block;font-weight:400;color:var(--muted);margin-top:6px}
+#validated-incident-detail .phase2-fact{padding:18px 0;border-bottom:1px solid var(--line)}
+#validated-incident-detail .phase2-fact:last-child{border:0}
+#validated-incident-detail .phase2-fact>p{margin:8px 0}
+#validated-incident-detail .phase2-fact-value{font-size:17px;font-weight:650}
+#validated-incident-detail .phase2-fact>details{margin-top:12px}
+#validated-incident-detail .phase2-missing-effect{display:flex;justify-content:space-between;gap:15px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+#validated-incident-detail .phase2-limitations{font-size:13px;padding-left:20px}
+#validated-incident-detail .phase2-limitations li{margin:10px 0}
+#validated-incident-detail .page-head>button{align-self:flex-start}
+.phase2-readiness-blockers{padding-left:20px}
+.phase2-readiness-blockers li{padding:8px 0;font-size:12px}
+.phase2-readiness-blockers button{display:inline-block;margin:6px 6px 0 10px;font-size:11px}
+@media(max-width:1000px){.phase2-details-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.phase2-details-grid{grid-template-columns:1fr}#validated-incidents .phase2-empty{padding:24px}}

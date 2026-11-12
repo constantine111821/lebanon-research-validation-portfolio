@@ -1,0 +1,56 @@
+[data-disposition-ui] {
+  margin-block: 12px;
+}
+.disposition-toolbar {
+  border-top: 1px solid #d5dce3;
+  padding: 14px 18px;
+}
+.disposition-actions {
+  padding: 10px 16px;
+  flex-wrap: wrap;
+}
+.disposition-note {
+  padding: 12px 16px;
+  border-left: 4px solid currentColor;
+}
+.disposition-note p {
+  margin: 5px 0;
+}
+.disposition-deferred {
+  background: #fff0ef !important;
+}
+.disposition-approved {
+  background: #eef8f0 !important;
+}
+.disposition-dependency_locked {
+  background: #fff8e6 !important;
+}
+.disposition-deferred > .disposition-note {
+  color: #822723;
+}
+.disposition-approved > .disposition-note {
+  color: #225b35;
+}
+.disposition-flow label:not(.certification-box) {
+  display: block;
+  margin-block: 14px;
+}
+.disposition-flow textarea {
+  display: block;
+  width: 100%;
+  min-height: 100px;
+}
+.disposition-requests {
+  border: 2px solid #88671f;
+}
+.disposition-requests article,
+.disposition-history article {
+  padding: 12px;
+  border-bottom: 1px solid #d5dce3;
+}
+.disposition-summary {
+  overflow-wrap: anywhere;
+}
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+}

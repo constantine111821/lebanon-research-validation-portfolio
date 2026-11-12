@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.next-preparation/
+.runtime/
+test-results/
+playwright-report/
+.env*
+*.tsbuildinfo
+__pycache__/
+*.pyc
+.vercel/
+*.dump
+*.backup
+*.sql.gz

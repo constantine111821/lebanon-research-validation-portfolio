@@ -1,0 +1,76 @@
+@import "../approved/base.css";
+@import "../approved/views.css";
+@import "../approved/shell.css";
+@import "../approved/supervisor.css";
+@import "../approved/phase2.css";
+@import "../approved/disposition.css";
+/* Authentication surroundings only; approved workspace styles stay exact. */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 9999;
+  background: white;
+  padding: 1rem;
+}
+.test-banner {
+  background: #fff2cf;
+  color: #594918;
+  text-align: center;
+  padding: 6px;
+  font-size: 12px;
+}
+.sign-in {
+  max-width: 1020px;
+  margin: 8vh auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  padding: 32px;
+}
+.login-story h1 {
+  font-size: 38px;
+}
+.login-card {
+  background: white;
+  border: 1px solid #d5dce3;
+  border-radius: 12px;
+  padding: 30px;
+}
+.login-form {
+  display: grid;
+  gap: 20px;
+}
+.login-form label {
+  display: grid;
+  gap: 6px;
+}
+.sign-in .error {
+  color: #a32121;
+}
+.sign-in .eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.sign-in .small,
+.sign-in .muted {
+  color: #566575;
+}
+.story-foot {
+  font-size: 12px;
+}
+.login-story li {
+  margin: 15px 0;
+}
+@media (max-width: 750px) {
+  .sign-in {
+    display: block;
+  }
+  .login-story {
+    margin-bottom: 24px;
+  }
+}

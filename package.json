@@ -1,0 +1,37 @@
+{
+  "name": "lebanon-research-validation-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": "11.19.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @rvw/web build",
+    "demo": "node scripts/demo.mjs",
+    "typecheck": "pnpm --filter @rvw/web typecheck",
+    "lint": "eslint apps/web packages/domain tests scripts --no-warn-ignored",
+    "browser:install": "playwright install chromium",
+    "test": "node --test tests/unit/*.test.*",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@playwright/test": "1.62.1",
+    "@types/node": "26.6.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "esbuild": "0.25.12",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.4.1",
+    "fake-indexeddb": "6.2.4",
+    "jsdom": "26.1.0",
+    "pg": "8.23.1",
+    "playwright": "1.62.1",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0"
+  }
+}

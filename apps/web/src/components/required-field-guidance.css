@@ -1,0 +1,39 @@
+/* Keep focus outlines independent of the required-field border. */
+[data-required-field-state="empty"] {
+  border-color: #ac7700 !important;
+}
+
+[data-required-field-state="missing"] {
+  border-color: #b32929 !important;
+}
+
+.required-field-message {
+  display: block;
+  margin-block-start: .25rem;
+  color: #6f5000;
+  font-size: .8rem;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.required-field-message::before {
+  content: "Required";
+}
+
+[data-required-field-state="missing"] + .required-field-message {
+  color: #9d2424;
+}
+
+[data-required-field-state="missing"] + .required-field-message::before {
+  content: "Fill in this required field.";
+}
+
+.required-field-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

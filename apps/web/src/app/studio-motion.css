@@ -1,0 +1,175 @@
+/* Local Studio motion successor. The underlying controls own all state. */
+body[data-studio-motion="true"] {
+  --motion-quick: 180ms;
+  --motion-panel: 280ms;
+  --motion-enter: 360ms;
+  --motion-out: 210ms;
+  --motion-ease: cubic-bezier(.22, .75, .24, 1);
+}
+
+/* The controller replaces the entire main on saves, filters and refresh.
+   Only a new destination gets the entrance marker. */
+body[data-studio-motion="true"] :is(.container, .sign-in, .sc019) {
+  animation: none;
+}
+body[data-studio-motion="true"] [data-studio-motion-enter="page"] {
+  animation: studio-motion-page var(--motion-enter) var(--motion-ease);
+}
+body[data-studio-motion="true"] [data-studio-motion-enter="page"] :is(.page-head, .brief-head, .supervisor-hero, .login-card, .sc019-section-head) {
+  animation: studio-motion-panel var(--motion-enter) var(--motion-ease);
+}
+
+body[data-studio-motion="true"] button {
+  transition: background-color var(--motion-quick) ease,
+    border-color var(--motion-quick) ease, box-shadow var(--motion-quick) ease,
+    opacity var(--motion-quick) ease, transform var(--motion-quick) var(--motion-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  body[data-studio-motion="true"] :is(button.primary, button.secondary, .login-form button):enabled:not([aria-disabled="true"]):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px #173b2a26;
+  }
+  body[data-studio-motion="true"] :is(.evidence-card, .package-evidence-card, .approval-evidence-choice:not(:has(> input:disabled))):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px #173b2a20;
+  }
+}
+body[data-studio-motion="true"] button:enabled:not([aria-disabled="true"]):active {
+  transform: translateY(1px) scale(.985);
+  transition-duration: 80ms;
+}
+body[data-studio-motion="true"] :is(.evidence-card, .package-evidence-card, .approval-evidence-choice) {
+  transition: background-color var(--motion-panel) ease,
+    border-color var(--motion-panel) ease, box-shadow var(--motion-panel) ease,
+    transform var(--motion-quick) var(--motion-ease);
+}
+body[data-studio-motion="true"] .approval-evidence-choice:has(> input:checked) {
+  animation: studio-motion-selection var(--motion-enter) var(--motion-ease);
+}
+body[data-studio-motion="true"] .approval-evidence-choice > input:checked {
+  animation: studio-motion-check var(--motion-panel) var(--motion-ease);
+}
+
+/* Native disclosure state and keyboard behavior stay authoritative. */
+body[data-studio-motion="true"] :is(.secondary-details, .fact-evidence-disclosure, .research-category, .coverage-domain)[open] > :not(summary) {
+  animation: none;
+}
+body[data-studio-motion="true"] :is(.secondary-details, .fact-evidence-disclosure, .fact-packages details, .research-category)[open] > :not(summary) {
+  animation: studio-motion-panel var(--motion-panel) var(--motion-ease);
+}
+@supports (interpolate-size: allow-keywords) and selector(details::details-content) {
+  body[data-studio-motion="true"] :is(.fact-evidence-disclosure, .fact-packages details) {
+    interpolate-size: allow-keywords;
+  }
+  body[data-studio-motion="true"] :is(.fact-evidence-disclosure, .fact-packages details)::details-content {
+    block-size: 0;
+    opacity: 0;
+    overflow: clip;
+    transition: block-size var(--motion-panel) var(--motion-ease),
+      opacity var(--motion-quick) ease, content-visibility var(--motion-panel) allow-discrete;
+  }
+  body[data-studio-motion="true"] :is(.fact-evidence-disclosure, .fact-packages details)[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+  body[data-studio-motion="true"] :is(.fact-evidence-disclosure, .fact-packages details)[open] > :not(summary) {
+    animation: none;
+  }
+}
+body[data-studio-motion="true"] :is(.package-comparison, .package-evidence-detail, .package-decisions + form, .sc019-editor) {
+  animation: studio-motion-panel var(--motion-enter) var(--motion-ease);
+}
+
+/* Native close releases focus and modality immediately. Only the pixels
+   transition out, and the closing dialog cannot intercept a pointer. */
+body[data-studio-motion="true"] dialog[open] .dialog-body {
+  animation: none;
+}
+body[data-studio-motion="true"] dialog {
+  opacity: 0;
+  translate: 0 12px;
+  scale: .985;
+  pointer-events: none;
+  transition: opacity var(--motion-out) ease,
+    translate var(--motion-out) var(--motion-ease), scale var(--motion-out) var(--motion-ease),
+    display var(--motion-out) allow-discrete, overlay var(--motion-out) allow-discrete;
+}
+body[data-studio-motion="true"] dialog[open] {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  pointer-events: auto;
+  transition-duration: var(--motion-panel);
+}
+body[data-studio-motion="true"] dialog::backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-out) ease,
+    display var(--motion-out) allow-discrete, overlay var(--motion-out) allow-discrete;
+}
+body[data-studio-motion="true"] dialog[open]::backdrop {
+  opacity: 1;
+  pointer-events: auto;
+  transition-duration: var(--motion-panel);
+}
+@starting-style {
+  body[data-studio-motion="true"] dialog[open] { opacity: 0; translate: 0 12px; scale: .985; }
+  body[data-studio-motion="true"] dialog[open]::backdrop { opacity: 0; }
+}
+
+/* Visible messages are generated by the existing application. No timers
+   dismiss messages or interpret an in-flight request as a success. */
+body[data-studio-motion="true"] :is(#notice.inline-notice:not([hidden]), .sc019-success, .fact-packages :is(.sc019-note[role="status"], .sc019-error[role="alert"])) {
+  animation: studio-motion-panel var(--motion-panel) var(--motion-ease);
+}
+body[data-studio-motion="true"] .private-save-status[data-studio-save-state="saved"] {
+  animation: studio-motion-saved 650ms var(--motion-ease);
+}
+body[data-studio-motion="true"] .private-save-status[data-studio-save-state="error"] {
+  animation: studio-motion-panel var(--motion-panel) var(--motion-ease);
+}
+
+@keyframes studio-motion-page {
+  from { opacity: .55; }
+  to { opacity: 1; }
+}
+@keyframes studio-motion-panel {
+  from { opacity: .52; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes studio-motion-selection {
+  from { box-shadow: 0 0 0 0 #2d774b65; }
+  to { box-shadow: 0 0 0 5px #2d774b00; }
+}
+@keyframes studio-motion-check {
+  from { scale: .78; }
+  58% { scale: 1.13; }
+  to { scale: 1; }
+}
+@keyframes studio-motion-saved {
+  from { background-color: #cde8d1; box-shadow: 0 0 0 4px #cde8d1; }
+  to { background-color: transparent; box-shadow: 0 0 0 0 #cde8d100; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-studio-motion="true"] *,
+  body[data-studio-motion="true"] *::before,
+  body[data-studio-motion="true"] *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  body[data-studio-motion="true"] dialog::backdrop {
+    animation: none !important;
+    transition: none !important;
+  }
+  @supports selector(details::details-content) {
+    body[data-studio-motion="true"] details::details-content {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+  body[data-studio-motion="true"] :is(button, .evidence-card, .package-evidence-card, .approval-evidence-choice) {
+    transform: none !important;
+  }
+}
