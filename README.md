@@ -1,43 +1,24 @@
 # Lebanon Research Validation Workspace
 
-A review-ready application for turning research on disruptions to healthcare in Lebanon into traceable, supervisor-reviewed records. It gives a research team a consistent way to document an incident, see the evidence behind a finding, record uncertainty, and decide whether a case is ready for approved output.
-
-The portfolio is a curated snapshot of the application with fictional cases, accounts, and source material. It is designed for a local review by Jenn and the Media Genesis IT team.
+A web application for documenting disruptions to healthcare in Lebanon and tracing each finding to the evidence behind it. This portfolio runs locally with fictional incidents, accounts, and sources.
 
 ## What I designed and led
 
-### Finding a better way to do the research
+I started with a national workbook of 1,383 facility records and a team of 14 researchers working on a Human Rights Watch assignment. I designed a facility-first research agent around the 122 workbook records in South and El Nabatieh. It saved source passages with its findings so a person could check the evidence.
 
-When Human Rights Watch assigned our lab to investigate disruptions to healthcare in Lebanon, I saw a gap in how we were doing the research. Our team of 14 researchers was working from a national Excel workbook with 1,383 facility records. Researchers would search Google for a facility by name and try to determine whether an incident had occurred there. Some searches started with broad terms about strikes in Lebanon, which made it hard to see what had already been checked and which facilities still needed attention.
+I first tried to build the review workflow in Excel. When the workbook reached its limits, I used Codex to build and test a web pilot. I led the workflow and product design, set the evidence and acceptance criteria, and worked with the lab to improve how researchers review facts, save drafts, and hand work to supervisors. I also designed the coordinate review and ArcGIS export workflow and organized a defensive security review.
 
-I saw an opportunity to make the team’s work more productive and learn how to build software with AI. I designed a research agent that narrowed the workbook to 122 records in South and El Nabatieh, the two governorates in scope. For each named facility, it ran a defined set of keyword searches, opened relevant sources, and extracted passages that addressed a predefined set of research questions. It saved the findings alongside the sources and excerpts, then moved to the next facility. I could run a batch without prompting it for every record.
+A second research engine with separate investigators and evidence reviewers is still in development. Its supervised benchmark results are documented separately from the workspace and its deployment history. [Read the full project story](docs/PROJECT_STORY.md)
 
-I’m developing a second version that assigns discovery and verification to separate agents, preserves the exact passages they used, and can resume after an interruption. One supervised benchmark used 20 agents, with ten investigators and ten separate reviewers. That version is still in development.
+## Explore the project
 
-### Building a workspace for human verification
+- **Project history** · See the major milestones or read the decisions and setbacks behind them. [Concise timeline](docs/TIMELINE.md) · [Expanded timeline](docs/TIMELINE_EXPANDED.md)
+- **How I worked** · See how I used the Guide, Masterbuild and Codex, and how I kept decisions and evidence intact when a chat changed. [Project workflow](docs/PROJECT_WORKFLOW.md)
+- **Try the workspace** · Run both roles and verify an approved export with synthetic data. [Local setup and walkthrough](docs/LOCAL_REVIEW.md) · [Architecture](docs/ARCHITECTURE.md)
+- **Security and evidence** · Review the controls, test results and their scope. [Security and verification](docs/SECURITY.md) · [Curated source snapshots](docs/CURATED_SNAPSHOTS.md)
 
-Once the agent could gather evidence, I had to figure out how the lab would review it. Human verification was a design requirement from the start. In human rights research, a plausible answer can still get the facility, date, or effect wrong. I wanted a researcher to be able to open a proposed finding, read the exact supporting passage, see what remained uncertain, and make their own decision.
-
-I first tried to build that workflow in an interactive Excel workbook. I reached the limits of what I could do with formulas and workbook automation, so I used Codex to build a web pilot. When I started the project in mid-September, I had never coded and had mainly used AI for occasional graphs, writing help, and image generation. I learned by asking Codex to explain what it was doing, testing the results myself, and changing the design when the workflow failed in practice. I funded my AI usage myself. After I presented the pilot to the lab leadership and faculty lead, I received the go-ahead to continue.
-
-The hardest part was designing an interface a first-time researcher could learn quickly. I worked through the workflow repeatedly and used feedback from lab members to find places where the next action was unclear. I separated Researcher and Supervisor roles so researchers could collect and review evidence while supervisors could assign work, see what was outstanding, and decide which records were ready for approved output. The lab began using the workspace, and its feedback still informs the design. A recent change made fact review easier to find and put the exact source excerpt alongside the finding it supports.
-
-I led the product and workflow design, defined what the software needed to do, and decided what evidence was sufficient to accept a change. I used Codex to help implement those decisions, coordinate development, and run tests. I also used the workspace myself and recruited lab members to test it under real working conditions.
-
-### Preparing the research for mapping and protecting access
-
-The next phase of the Human Rights Watch project is to map the facilities alongside the findings the lab verifies. Drawing on my GIS minor, I designed a coordinate review workflow and a one-click export formatted for ArcGIS. That gives the lab a path from reviewed findings to a mapping dataset without manually rebuilding the facility and evidence records in GIS.
-
-Because the workspace handles sensitive research, I designed permissions around what each role needs to do. Private drafts are scoped to their owners, and sensitive actions require the appropriate role. The goal is to limit what a compromised account can access or change. I consulted cybersecurity students and professionals and organized a seven-agent defensive review of the application, repository, and hosting. That work verified specific access controls and identified further work on hosted monitoring and recovery.
-
-### Acknowledgments
+## Acknowledgments
 
 Thank you to Kenneth Bundy, whom I met by chance when I was stuck. His advice on structuring the data and his encouragement to use Codex, Next.js, and Vercel helped me see a way forward. I’m not sure this project would have crossed the finish line without that conversation.
 
-Thank you to Robert Rathwaite for believing I could build this and trusting that the workspace could support real research. Thank you to Gwen Lang for her encouragement, her trust, and her leadership throughout the development of the website.
-
-## Review the application
-
-- Run the project from a clean clone and try both roles on synthetic data. [Local setup and walkthrough](docs/LOCAL_REVIEW.md)
-- See how the interface, application routes, review rules, and data layer fit together. [Architecture](docs/ARCHITECTURE.md)
-- See what changed across the project and how I led that work. [Milestones](docs/TIMELINE.md)
+Thank you to my HRL faculty lead for believing I could build this and trusting that the workspace could support real research. Thank you to my Lebanon project lead for the encouragement, trust, and leadership throughout the development of the website.

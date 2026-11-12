@@ -1,0 +1,48 @@
+name: Portfolio reviewer checks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-clone:
+    name: Clean checkout on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.3'
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.19.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify checkout and install locked dependencies
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          test "$(node --version)" = "v24.22.3"
+          test "$(pnpm --version)" = "11.19.0"
+          pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - if: runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps chromium
+      - if: runner.os != 'Linux'
+        run: pnpm browser:install
+      - run: pnpm test:browser

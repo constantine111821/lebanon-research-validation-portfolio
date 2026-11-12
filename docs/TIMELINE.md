@@ -1,14 +1,15 @@
-# Project milestones
+# Project timeline
 
-These dates describe work recorded during development and verification. The portfolio contains a curated current snapshot with a fresh Git history.
+[Expanded timeline](TIMELINE_EXPANDED.md) · [How I worked with AI](PROJECT_WORKFLOW.md) · [Curated source snapshots](CURATED_SNAPSHOTS.md)
 
-| Date | What changed | What I led |
-| --- | --- | --- |
-| October 1, 2026 | The first Next.js slice brought case review, private drafts, and the Researcher and Supervisor workflows into a runnable application. | Set the core role and case-review requirements and directed the transition to a shared workspace. |
-| October 2, 2026 | Incident dispositions, evidence authority, and database-backed verification became part of the workflow. | Defined the boundaries between individual research work and supervisor decisions and directed acceptance testing. |
-| October 5, 2026 | The workspace gained clearer evidence review, supervisor readiness and acceptance checks, and portable research exports. | Refined the acceptance criteria and reviewed how the application presented evidence and prepared approved output. |
-| October 7, 2026 | Source review became easier to read, and saved research summaries gained a Supervisor-only analytics view. | Prioritized readable evidence, continuity during review, and access boundaries for summaries. |
-| November 11, 2026 | The private repository was reconciled with the accepted implementation. The remediation work added provider retry behavior, export limits, and allowlisted CI evidence. | Set the remediation priorities, approved the private review scope, and required checks tied to exact source revisions. |
-| November 12, 2026 UTC | The combined failure-handling and evidence changes passed the pull request workflow with disposable Auth and database services. The downloaded bundle was checked against the tested commit, tree, and checksums. | Required a rerun in the context that had failed and made verified evidence a condition for integration. |
+| When in 2026 | What changed |
+| --- | --- |
+| September 11–13 | I started with a lab assignment to find and verify healthcare disruptions. I built an early AI-assisted research workflow, approved 122 source records across two governorates, and kept the Guide and the build separate. |
+| September 14–25 | I made a workbook for human evidence review. A new version broke in Excel even after automated checks passed, so I kept the one I had tested myself. I moved the shared review workflow to a web pilot. |
+| September 30–October 7 | After meeting Kenneth Bundy, I moved the build to Codex and brought the project into GitHub. I restored the review interface I wanted to keep, tested private drafts and Supervisor decisions, and reached a bounded hosted pilot. |
+| October 8–30 | I chose to carry the lab’s existing article research into the new workflow. I kept exploratory work in a shared spreadsheet and used the website for incidents and evidence ready for review. I also worked through sign-in, evidence display, draft editing, and an ArcGIS export. |
+| November 3–7 | Lab feedback led to independent review of proposed corrections, clearer draft and submission states, and improvements to assignments. Account administration gained a separate authentication check. |
+| November 6–10 | I tested a second research engine that kept discovery and verification separate. A supervised benchmark found all nine reference leads and recovered eight episodes exactly. The test used Ukraine education cases. |
+| November 11–12 | I improved the entry point for reviewing facts and checked the deployed workflow. I then prepared the synthetic portfolio and verified its setup across Windows, Ubuntu, and macOS. |
 
-I used AI assistance throughout implementation and testing. The dates above describe verified engineering milestones. Three selected historical excerpts illustrate the draft, export, and evidence-reading changes. [Curated source snapshots](CURATED_SNAPSHOTS.md)
+[Project story](PROJECT_STORY.md) · [Security and verification](SECURITY.md)

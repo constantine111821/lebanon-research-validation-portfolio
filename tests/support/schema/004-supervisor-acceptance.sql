@@ -7,13 +7,6 @@ create table public.lab_claim_requirement (
 );
 alter table public.lab_claim_requirement enable row level security;
 revoke all on public.lab_claim_requirement from public,anon,authenticated;
--- Explicit pilot requirement authority, not an IDENTITY-family guess.
-insert into public.lab_claim_requirement(claim_id,category,authority)
-select v.id,v.category,'Owner amendment 008: canonical physical identity/type; operator informational'
-from (values ('C-BQ-IDENTITY','PHYSICAL_IDENTITY'),('C-BQ-TYPE','FACILITY_TYPE'),
- ('C-GHA-IDENTITY','PHYSICAL_IDENTITY'),('C-GHA-TYPE','FACILITY_TYPE'),
- ('C-SGH-IDENTITY','PHYSICAL_IDENTITY'),('C-SGH-TYPE','FACILITY_TYPE'),
- ('C-BQ-OPERATOR','INFORMATIONAL')) v(id,category) join public.claim c on c.id=v.id;
 alter table public.lab_phase2_approval add column acceptance_snapshot jsonb;
 
 create function lab_private.acceptance_readiness(iid text) returns jsonb
