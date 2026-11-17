@@ -278,12 +278,18 @@ export function sourceTypeLabel(source) {
   const specific={hospital:'Hospital statement',video:'Video',photo:'Photograph'}[subtype];
   return specific ? `${specific} · recorded category: ${names[canonical] || (canonical?label(canonical):'Unclassified')}` : names[canonical] || (canonical?label(canonical):'Source type unclassified');
 }
-export function renderEvidenceSummary(s, source, rel = {}) {
+export function renderEvidenceSummary(s, source, rel = {}, { labelAction = false } = {}) {
   source = effectiveSource(source, rel);
   const entries=evidenceEntries(s,source,rel),entry=entries.find(e=>entryKind(e)==='observation')||entries.find(e=>entryKind(e)==='source')||entries.find(e=>entryKind(e)==='assessment')||entries[0];
   const kind=entry?entryKind(entry):'missing',text=entry?(kind==='structured'?structuredPreview(entry):kind==='source'&&/captured passage/i.test(entry.label||'')?readableCapture(entry.text):entry.text):'No relevant passage is saved. Inspect the recorded source and citation gap before deciding.';
   const limit=[...new Set([...strings(rel.limitations),...strings(source.limitations)])].filter(x=>x!==entry?.text).join(' '),dep=dependency(s,source,rel),href=safeURL(source.canonical_url||source.original_url),name=relationship(rel.support_direction)[0];
-  return `<article class="evidence-card evidence-compact evidence-readable ${rel.support_direction==='CONTRADICTS'?'contra':rel.support_direction==='LIMITS'?'limit':''}" data-source-id="${h(source.source_id)}" data-evidence-relation="${h(rel.support_direction||'UNKNOWN')}"><h4 dir="auto">${h(source.title||'Preserved source without a recorded title')}</h4><p class="evidence-byline" dir="auto">${h(source.publisher_platform||'Publisher not recorded')} · <span data-source-type="${h(source.source_type||'UNKNOWN')}">${h(sourceTypeLabel(source))}</span> · Published or posted: ${h(publication(source))}</p><p class="evidence-relationship"><strong>${h(name)}</strong></p><p class="evidence-text" dir="auto"><b>${kind==='assessment'?'Recorded assessment (not a quotation)':kind==='structured'?'Recorded source fields':'Relevant evidence'}:</b> ${h(short(text))}</p>${limit?`<p class="evidence-summary-limit" dir="auto"><b>Limit:</b> ${h(short(limit,180))}</p>`:''}${!dep.startsWith('Independence is not established')?`<p class="evidence-dependency">${h(dep)}</p>`:''}${source.retrieval_body_status&&source.retrieval_body_status!=='USABLE_BODY'?`<p class="subtle">${h({PARTIAL_USABLE_BODY:'Partial source capture',INDEXED_ONLY:'Index or search result only',INACCESSIBLE_NEUTRAL:'Source was inaccessible when recorded',DUPLICATE_OR_DEPENDENT:'Repeated or dependent report'}[source.retrieval_body_status]||'Source access not established')}</p>`:''}<div class="inline">${href?`<a href="${h(href)}" target="_blank" rel="noopener noreferrer">Open source</a>`:'<span>No usable web link recorded</span>'}<button type="button" data-action="source" data-id="${h(source.source_id)}" data-claim="${h(rel.claim_id||'')}" data-relation="${h(rel.claim_source_id||'')}">View passage and details</button></div></article>`;
+  return `<article class="evidence-card evidence-compact evidence-readable ${rel.support_direction==='CONTRADICTS'?'contra':rel.support_direction==='LIMITS'?'limit':''}" data-source-id="${h(source.source_id)}" data-evidence-relation="${h(rel.support_direction||'UNKNOWN')}"><h4 dir="auto">${h(source.title||'Preserved source without a recorded title')}</h4><p class="evidence-byline" dir="auto">${h(source.publisher_platform||'Publisher not recorded')} · <span data-source-type="${h(source.source_type||'UNKNOWN')}">${h(sourceTypeLabel(source))}</span> · Published or posted: ${h(publication(source))}</p>${evidenceLabel(s, rel, name, labelAction)}<p class="evidence-text" dir="auto"><b>${kind==='assessment'?'Recorded assessment (not a quotation)':kind==='structured'?'Recorded source fields':'Relevant evidence'}:</b> ${h(short(text))}</p>${limit?`<p class="evidence-summary-limit" dir="auto"><b>Limit:</b> ${h(short(limit,180))}</p>`:''}${!dep.startsWith('Independence is not established')?`<p class="evidence-dependency">${h(dep)}</p>`:''}${source.retrieval_body_status&&source.retrieval_body_status!=='USABLE_BODY'?`<p class="subtle">${h({PARTIAL_USABLE_BODY:'Partial source capture',INDEXED_ONLY:'Index or search result only',INACCESSIBLE_NEUTRAL:'Source was inaccessible when recorded',DUPLICATE_OR_DEPENDENT:'Repeated or dependent report'}[source.retrieval_body_status]||'Source access not established')}</p>`:''}<div class="inline">${href?`<a href="${h(href)}" target="_blank" rel="noopener noreferrer">Open source</a>`:'<span>No usable web link recorded</span>'}<button type="button" data-action="source" data-id="${h(source.source_id)}" data-claim="${h(rel.claim_id||'')}" data-relation="${h(rel.claim_source_id||'')}">View passage and details</button></div></article>`;
+}
+function evidenceLabel(s, relation, name, editable) {
+  const button = editable && Number.isInteger(s.revisions?.CLAIM_SOURCE?.[relation.claim_source_id]) &&
+    Number.isInteger(s.revisions?.SOURCE?.[relation.source_id]);
+  return `<p class="evidence-relationship${button ? " inline" : ""}"><strong>${h(name)}</strong>${button ?
+    `<button type="button" data-action="change-evidence-label" data-claim="${h(relation.claim_id)}" data-relation="${h(relation.claim_source_id)}">Change evidence label</button>` : ""}</p>`;
 }
 function sameSavedLocation(location, ref) {
   if (typeof location?.locator !== "string" || typeof ref?.locator !== "string") return false;
@@ -325,7 +331,7 @@ function citedCapturePassages(text, scope) {
   }));
 }
 
-function incidentPassages(s, source, relation) {
+export function incidentPassages(s, source, relation) {
   const locations = Array.isArray(relation.evidence_locator) ? relation.evidence_locator : [];
   const inline = locations.flatMap((location) => {
     const text = location?.excerpt || location?.description;
@@ -355,7 +361,7 @@ function incidentPassages(s, source, relation) {
   });
 }
 
-function renderIncidentEvidence(s, source, relation) {
+export function renderIncidentEvidence(s, source, relation, { labelAction = false, sourceDetails = true } = {}) {
   source = effectiveSource(source, relation);
   const passages = incidentPassages(s, source, relation);
   const title = h(source.title || "Source title not recorded");
@@ -369,6 +375,10 @@ function renderIncidentEvidence(s, source, relation) {
     structured: "Saved mapping or source record",
   };
   const relationName = relationship(relation.support_direction)[0];
+  const labelRow = evidenceLabel(s, relation, relationName, labelAction);
+  const uncopiedLocators = !sourceDetails && !passages.length && Array.isArray(relation.evidence_locator)
+    ? relation.evidence_locator.map(entry => entry?.locator).filter(locator => typeof locator === "string")
+    : [];
   const sourceLimits = Array.isArray(source.limitations) ? source.limitations : [];
   const identityLimits = sourceLimits.flatMap((limit) => limit?.facility_specific_evidence_eligible === false ? strings(limit.basis) : []);
   const limits = [...new Set([...strings(relation.limitations), ...strings(source.limitations), ...identityLimits])]
@@ -387,23 +397,25 @@ function renderIncidentEvidence(s, source, relation) {
       <p class="evidence-byline">${h(source.publisher_platform || "Publisher not recorded")} · Published or posted: ${h(publication(source))}</p>
       ${href ? "" : '<p class="evidence-missing">No usable web link recorded.</p>'}
     </header>
+    ${sourceDetails ? "" : labelRow}
     ${passages.map(({ text, locator, kind }) => {
       if (kind === "excerpt" && subtype === "mapping") kind = "structured";
       if (kind === "excerpt" && ["video", "photo", "human OSINT", "observation"].includes(subtype)) kind = "observation";
       const exactText = h(text).replaceAll("\r", "&#13;");
       return `<div class="incident-evidence-passage" data-evidence-kind="${kind}"><p><strong>${descriptions[kind]}</strong></p><div class="incident-evidence-passage-text" dir="auto">${exactText}</div>${locator ? `<p class="incident-evidence-locator"><strong>Saved citation</strong> <bdi>${h(locator)}</bdi></p>` : ""}</div>`;
     }).join("") || '<p class="evidence-missing">No saved excerpt is tied to this finding. Check the source details for the recorded citation.</p>'}
-    <p class="evidence-relationship"><strong>${h(relationName)}</strong></p>
+    ${uncopiedLocators.map(locator => `<p class="incident-evidence-locator"><strong>Saved citation</strong> <bdi>${h(locator)}</bdi></p>`).join("")}
+    ${sourceDetails ? labelRow : ""}
     ${limits.length || provenance || availability ? `<div class="incident-evidence-caveats">
       ${limits.map((text) => `<p dir="auto"><strong>Limit</strong> ${h(text)}</p>`).join("")}
       ${provenance ? `<p class="evidence-dependency">${h(provenance)}</p>` : ""}
       ${availability ? `<p>${h(availability)}</p>` : ""}
     </div>` : ""}
-    <button type="button" data-action="source" data-id="${h(source.source_id)}" data-claim="${h(relation.claim_id)}" data-relation="${h(relation.claim_source_id)}">Source details</button>
+    ${sourceDetails ? `<button type="button" data-action="source" data-id="${h(source.source_id)}" data-claim="${h(relation.claim_id)}" data-relation="${h(relation.claim_source_id)}">Source details</button>` : ""}
   </article>`;
 }
 
-export function renderFactEvidence(s, claim, { incidentReview = false } = {}) {
+export function renderFactEvidence(s, claim, { incidentReview = false, labelAction = false } = {}) {
  const links=(s.records?.CLAIM_SOURCE||[]).filter(r=>r.claim_id===claim.claim_id&&currentEvidence(r));
  const pairs=links.map(relation=>({relation,source:s.records?.SOURCE?.find(x=>x.source_id===relation.source_id)}));
  const renderSource=incidentReview?renderIncidentEvidence:renderEvidenceSummary;
@@ -412,13 +424,13 @@ export function renderFactEvidence(s, claim, { incidentReview = false } = {}) {
  const summary=`${new Set(links.map(r=>r.source_id)).size} linked sources · ${links.length} relationships`;
  const adverse=[count('CONTRADICTS')?`${count('CONTRADICTS')} challenging`:null,count('LIMITS')?`${count('LIMITS')} qualifying`:null].filter(Boolean).join(' · ');
  const body=Object.entries(types).map(([code,title])=>{
-   const group=pairs.filter(p=>p.relation.support_direction===code);return group.length?`<section class="fact-evidence-group" data-evidence-group="${code}"><h4>${title}</h4>${(code==='LIMITS'||code==='CONTEXT_ONLY')?`<p class="subtle">${h(RELATIONSHIPS[code][1])}</p>`:''}<div class="review-evidence">${group.map(p=>p.source?renderSource(s,p.source,p.relation):'<p class="empty">Linked source unavailable in this workspace. Its recorded relationship is retained.</p>').join('')}</div></section>`:'';
+   const group=pairs.filter(p=>p.relation.support_direction===code);return group.length?`<section class="fact-evidence-group" data-evidence-group="${code}"><h4>${title}</h4>${(code==='LIMITS'||code==='CONTEXT_ONLY')?`<p class="subtle">${h(RELATIONSHIPS[code][1])}</p>`:''}<div class="review-evidence">${group.map(p=>p.source?renderSource(s,p.source,p.relation,{labelAction}):'<p class="empty">Linked source unavailable in this workspace. Its recorded relationship is retained.</p>').join('')}</div></section>`:'';
  }).join('');
- const unknown=pairs.filter(p=>!types[p.relation.support_direction]).map(p=>p.source?renderSource(s,p.source,p.relation):'<p class="empty">Linked source unavailable; relationship retained.</p>').join('');
+ const unknown=pairs.filter(p=>!types[p.relation.support_direction]).map(p=>p.source?renderSource(s,p.source,p.relation,{labelAction}):'<p class="empty">Linked source unavailable; relationship retained.</p>').join('');
  return `<details class="fact-evidence-disclosure" data-disclosure-key="evidence-${h(claim.claim_id)}" data-evidence-claim="${h(claim.claim_id)}"><summary><span>Evidence · ${summary}</span>${adverse?`<strong class="evidence-caution">${adverse}</strong>`:''}</summary>${body}${unknown}${!links.length?'<p class="empty">No current evidence relationship is available. Any withdrawn evidence remains in Scientific corrections history. Missing support does not establish a negative finding.</p>':''}</details>`;
 }
 
-export function renderApprovalEvidence(s, claim, pending) {
+export function renderApprovalEvidence(s, claim, pending, { labelAction = false } = {}) {
   const revision = s.revisions?.CLAIM?.[claim.claim_id] ?? null;
   const pairs = s.records ? evidenceFor(s, claim.claim_id) : [];
   const references = pairs.map(({ relation, source }) => ({
@@ -431,12 +443,16 @@ export function renderApprovalEvidence(s, claim, pending) {
   const sameEvidence = pending?.expected_claim_revision === revision &&
     saved?.length === references.length &&
     references.every(ref => saved.some(entry => Object.keys(ref).every(key => entry[key] === ref[key])));
-  return `<fieldset class="section-space" aria-label="Evidence for approval"><legend>Evidence for approval</legend><p>For a Supported decision, choose the supporting relationships you relied on. Other evidence stays linked. Explain any recorded challenges or qualifications in your review.</p><input type="hidden" name="approval_fact_revision" value="${h(revision)}"><input type="hidden" name="approval_evidence_baseline" value="${h(JSON.stringify(references))}">${pairs.map(({ relation, source }, index) => {
+  const hasSupport = pairs.some(({ relation }, index) => relation.support_direction === "SUPPORTS" &&
+    references[index].revision !== null && references[index].source_revision !== null);
+  return `<fieldset class="section-space" aria-label="Evidence for approval"><legend>Evidence for approval</legend><p>For a Supported decision, choose the supporting relationships you relied on. Other evidence stays linked. Explain any recorded challenges or qualifications in your review.</p>${labelAction ? `<p class="inline"><button type="button" data-action="refresh-review-evidence">Refresh evidence</button><span data-label-review-status role="status"></span></p>${pairs.length && !hasSupport ? '<p class="callout">No saved supporting excerpts are eligible. Use Change evidence label if a saved excerpt supports this exact finding, then refresh after approval. If the excerpts only qualify the finding, add supporting evidence or choose the review result the evidence warrants.</p>' : ""}` : ""}<input type="hidden" name="approval_fact_revision" value="${h(revision)}"><input type="hidden" name="approval_evidence_baseline" value="${h(JSON.stringify(references))}">${pairs.map(({ relation, source }, index) => {
     const ref = references[index];
     const eligible = relation.support_direction === 'SUPPORTS' && ref.revision !== null && ref.source_revision !== null;
     const checked = eligible && sameEvidence && saved.some(entry => entry.id === ref.id && entry.selected);
-    return `<div>${renderEvidenceSummary(s, source, relation)}${eligible ? `<label class="approval-evidence-choice"><input type="checkbox" name="approval_evidence_choice" value="${h(ref.id)}"${checked ? ' checked' : ''}> Rely on ${h(source.title || ref.source_id)} for approval</label>` : '<p class="subtle">Available for review. Ineligible as supporting evidence.</p>'}<p class="subtle">Source ${h(ref.source_id)} · relationship ${h(ref.id)}</p></div>`;
-  }).join('') || '<p>No evidence is linked. Attach evidence before certifying a review. New facts can still be submitted unreviewed.</p>'}</fieldset>`;
+    return `<div>${renderEvidenceSummary(s, source, relation, {labelAction})}${eligible ? `<label class="approval-evidence-choice"><input type="checkbox" name="approval_evidence_choice" value="${h(ref.id)}"${checked ? ' checked' : ''}> Rely on ${h(source.title || ref.source_id)} for approval</label>` : '<p class="subtle">Available for review. Ineligible as supporting evidence.</p>'}<p class="subtle">Source ${h(ref.source_id)} · relationship ${h(ref.id)}</p></div>`;
+  }).join('') || (labelAction
+    ? '<p>No evidence is linked. Return to the fact and use Add evidence, or choose the review result the available evidence warrants.</p>'
+    : '<p>No evidence is linked. Attach evidence before certifying a review. New facts can still be submitted unreviewed.</p>')}</fieldset>`;
 }
 
 export function renderApprovalHistory(s, claim) {

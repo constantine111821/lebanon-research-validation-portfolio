@@ -83,7 +83,12 @@ function* boundedCSVRecords(records, maxBytes, checkBudget) {
   }
 }
 
-export function zipFiles(files, { maxBytes = Infinity, checkBudget = () => {} } = {}) {
+const officeWorkbookParts = new Set([
+  '[Content_Types].xml', '_rels/.rels', 'xl/workbook.xml',
+  'xl/_rels/workbook.xml.rels', 'xl/styles.xml', 'xl/worksheets/sheet1.xml',
+  'xl/worksheets/_rels/sheet1.xml.rels',
+]);
+export function zipFiles(files, { maxBytes = Infinity, checkBudget = () => {}, officeWorkbook = false } = {}) {
   const size = Object.entries(files).reduce(
     (total, [name, payload]) => total + 76 + 2 * Buffer.byteLength(name) + Buffer.byteLength(payload),
     22,
@@ -92,7 +97,8 @@ export function zipFiles(files, { maxBytes = Infinity, checkBudget = () => {} } 
   const local=[],central=[];let offset=0;
   for(const [name,payload] of Object.entries(files).sort(([a],[b])=>a.localeCompare(b))) {
     checkBudget();
-    if (!/^[a-zA-Z0-9_.-]+$/.test(name)) throw Error('Unsafe package filename');
+    if (!(officeWorkbook ? officeWorkbookParts.has(name) : /^[a-zA-Z0-9_.-]+$/.test(name)))
+      throw Error('Unsafe package filename');
     const n=Buffer.from(name), b=Buffer.from(payload), crc=crc32(b), h=Buffer.alloc(30),c=Buffer.alloc(46);
     h.writeUInt32LE(0x04034b50); h.writeUInt16LE(20,4);h.writeUInt16LE(0x800,6);h.writeUInt16LE(33,12);h.writeUInt32LE(crc,14);h.writeUInt32LE(b.length,18);h.writeUInt32LE(b.length,22);h.writeUInt16LE(n.length,26);
     c.writeUInt32LE(0x02014b50);c.writeUInt16LE(20,4);c.writeUInt16LE(20,6);c.writeUInt16LE(0x800,8);c.writeUInt16LE(33,14);c.writeUInt32LE(crc,16);c.writeUInt32LE(b.length,20);c.writeUInt32LE(b.length,24);c.writeUInt16LE(n.length,28);c.writeUInt32LE(offset,42);

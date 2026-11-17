@@ -12,7 +12,7 @@ A second research engine with separate investigators and evidence reviewers is s
 
 ## Explore the project
 
-- **Project history** · See the major milestones or read the decisions and setbacks behind them. [Concise timeline](docs/TIMELINE.md) · [Expanded timeline](docs/TIMELINE_EXPANDED.md)
+- **Project history** · See the major milestones or read the decisions and setbacks behind them. [Concise timeline](docs/TIMELINE.md) · [Expanded timeline](docs/TIMELINE_EXPANDED.md) · [November release history](CHANGELOG.md)
 - **How I worked** · See how I used the Guide, Masterbuild and Codex, and how I kept decisions and evidence intact when a chat changed. [Project workflow](docs/PROJECT_WORKFLOW.md)
 - **Try the workspace** · Run both roles and verify an approved export with synthetic data. [Local setup and walkthrough](docs/LOCAL_REVIEW.md) · [Architecture](docs/ARCHITECTURE.md)
 - **Security and evidence** · Review the controls, test results and their scope. [Security and verification](docs/SECURITY.md) · [Curated source snapshots](docs/CURATED_SNAPSHOTS.md)

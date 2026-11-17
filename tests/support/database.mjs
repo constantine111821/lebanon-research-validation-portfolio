@@ -82,6 +82,48 @@ export async function createDatabase() {
       "insert into public.lab_profiles(user_id,display_name,role,active) values($1,$2,$3,$4)",
       [user.id, user.name, user.role, user.active],
     );
+  // Give the public export a current fictional review and its matching evidence.
+  const reviewer = users.supervisor.id;
+  const reviewedAt = "2026-11-04T12:00:00Z";
+  for (const kind of ["IDENTITY", "TYPE"]) {
+    const claimId = "C-SYN019-" + kind;
+    const auditId = "A-SYN019-PERIODICAL-" + kind;
+    const link = records.claim_source.find(row => row.claim_source_id === "E-SYN019-" + kind);
+    const source = records.source.find(row => row.source_id === link.source_id);
+    const approvalBasis = [{
+      id: link.claim_source_id,
+      revision: 1,
+      data: link,
+      source: { id: source.source_id, revision: 1, data: source },
+    }];
+    const reviewArtifact = {
+      claim_id: claimId,
+      prior_revision: 1,
+      reviewer,
+      reviewed_at: reviewedAt,
+      proposal: { validation_state: "SUPPORTED" },
+      approval_basis: approvalBasis,
+    };
+    await database.query(
+      "update public.claim set revision=2,data=data||$2::jsonb where id=$1",
+      [claimId, { current_value_authority: { authority_artifact: auditId } }],
+    );
+    await database.query(
+      "update public.lab_claim_workflow set lab_review_state='REVIEWED',review_needed=false,lab_reviewed_claim_revision=2,lab_reviewed_by=$2,lab_reviewed_at=$3 where claim_id=$1",
+      [claimId, reviewer, reviewedAt],
+    );
+    await database.query("insert into public.activity_log(id,data) values($1,$2)", [auditId, {
+      activity_id: auditId,
+      entity_type: "CLAIM",
+      entity_id: claimId,
+      incident_id: "I-SYN019-MAIN",
+      action_type: "validate",
+      actor_role: "supervisor",
+      actor: reviewer,
+      timestamp: reviewedAt,
+      authority_artifact: { payload: { operation: { review_artifact: reviewArtifact } } },
+    }]);
+  }
   let queue = Promise.resolve();
   function serial(work) {
     const next = queue.then(work);

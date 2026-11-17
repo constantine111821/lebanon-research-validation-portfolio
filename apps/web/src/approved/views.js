@@ -72,7 +72,7 @@ export function factCard(s,c,readOnly=false,consolidated=false,caseId=null){
    ${c.claim_family==='ATTACK_TO_EFFECT_CAUSATION'?`<p data-current-lab-causation data-current-lab-causation-supported="${D.causalFindingState(s,c).supported}"><b>Current causal review:</b> ${h(D.causalFindingState(s,c).value_text)}</p>`:''}
    ${c.review_notes&&['KINETIC_EVENT','EVENT_DATE'].includes(c.claim_family)?`<p class="subtle"><b>Scope of this finding</b> ${h(c.review_notes)}</p>`:''}
    ${D.proposedEntry(s,c)}${D.conflictFor(s,c)}
-   <section class="fact-evidence">${renderFactEvidence(s,c,{incidentReview:true})}</section>
+   <section class="fact-evidence">${renderFactEvidence(s,c,{incidentReview:true,labelAction:!readOnly&&!factLock(s,c.claim_id).locked})}</section>
    ${history}${corrections}
   </article>`;
  }

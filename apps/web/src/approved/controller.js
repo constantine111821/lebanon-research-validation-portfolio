@@ -9,6 +9,8 @@ import { WorkspaceStore } from "./transport.js";
 import { installSnapshotRefresh } from "./snapshot-refresh.js";
 import { polishPresentation } from "./presentation.js";
 import { createSourceInspection } from "./source-inspection.js";
+import { createEvidenceLabelDialog, evidenceCorrections, evidenceLabelStatus } from "./evidence-label.js";
+import { renderApprovalEvidence } from "./evidence-presentation.js";
 import { relationshipHelp } from "./evidence-presentation.js";
 import { renderIdentityGuide } from "./identity-guide.js";
 import { verifiedGISBlob, saveVerifiedGISBlob } from "./gis-download.js";
@@ -140,7 +142,7 @@ export function mountWorkspace(
     },
   });
   function hasUnsecuredWork() {
-    return formDirty || autosave.dirty() || !!(facilityCommand || assignmentCommand || phase2Command || workflowCommand || dispositionCommand);
+    return formDirty || labelDialog.hasUnfinished() || autosave.dirty() || !!(facilityCommand || assignmentCommand || phase2Command || workflowCommand || dispositionCommand);
   }
   function hasSuspendedWork() {
     return [...checkpoints].some(([key,x])=>key!==historyKey && (x.formDirty || (x.save?.latest && x.save.state!=='Saved privately')));
@@ -188,6 +190,7 @@ export function mountWorkspace(
     const saved=checkpoints.get(targetKey);
     if (!saved && !validContext(targetContext)) return;
     applyingHistory=true;
+    labelDialog.close();
     if(dialog.open) dialog.close();
     formDirty=false; pending=[]; creation=null; draftId=null; draftRevision=0;
     facilityCommand=null; assignmentCommand=null; phase2Command=null; workflowCommand=null; dispositionCommand=null;
@@ -249,6 +252,7 @@ export function mountWorkspace(
   });
   const disclosures = createDisclosures(root, window);
   const sourceInspection = createSourceInspection(dialog);
+  const labelDialog = createEvidenceLabelDialog(container, store);
   function showError(e) {
     if (store?.mode === "supabase" && (e.labAccessDenied || e.sessionExpired)) {
       // Keep this tab's working input; server authority remains mandatory on every retry.
@@ -533,6 +537,74 @@ export function mountWorkspace(
         : "") + reviewFactForm(c),
     );
     dialog.dataset.claim = c.claim_id;
+  }
+  function reviewFindingSignature(claim) {
+    return evidenceSignature([
+      claim.subject, claim.current_verified_value, claim.claim_family, claim.value_type,
+      claim.date_precision, claim.quantitative_unit, claim.impact_basis,
+      claim.attack_claim_id, claim.effect_claim_id,
+    ]);
+  }
+  async function refreshReviewEvidence() {
+    const form = dialog.querySelector("#fact-form");
+    const claimId = dialog.dataset.claim;
+    if (!form || !current || pendingHistory) return;
+    const caseId = current;
+    await refresh();
+    if (!dialog.open || !dialog.contains(form) || current !== caseId || pendingHistory) return;
+    const claim = s.records.CLAIM.find(item => item.claim_id === claimId);
+    const lock = factLock(s, claimId);
+    const block = !claim || claim.is_current === false || claim.correction_withdrawn
+      ? "This fact is no longer available for review."
+      : lock.locked ? lockMessage(lock)
+      : form.dataset.reviewFinding !== reviewFindingSignature(claim)
+        ? "The saved finding changed. Preserve your notes and reopen Review fact to read the latest finding."
+        : "";
+    form.querySelector('button[type="submit"]').disabled = Boolean(block);
+    if (block) {
+      for (const box of form.querySelectorAll('[name="approval_evidence_choice"]')) {
+        box.checked = false;
+        box.disabled = true;
+      }
+      form.elements.attestation.checked = false;
+      throw Error(block + " Your unfinished input remains in this tab.");
+    }
+
+    const oldEvidence = form.querySelector('fieldset[aria-label="Evidence for approval"]');
+    const selected = new Set(new FormData(form).getAll("approval_evidence_choice"));
+    const baseline = form.elements.approval_evidence_baseline.value;
+    const previousRevision = form.elements.approval_fact_revision.value;
+    oldEvidence.outerHTML = renderApprovalEvidence(s, claim, null, { labelAction: true });
+    const sameRevision = previousRevision === form.elements.approval_fact_revision.value;
+    const sameEvidence = baseline === form.elements.approval_evidence_baseline.value;
+    if (sameRevision && sameEvidence) {
+      for (const box of form.querySelectorAll('[name="approval_evidence_choice"]'))
+        box.checked = selected.has(box.value);
+    } else form.elements.attestation.checked = false;
+    const needsExplanation = F.reviewBasisNeedsExplanation(s, claimId);
+    form.dataset.approvalRationaleRequired = String(needsExplanation);
+    form.elements.basis_explanation.required = needsExplanation && form.elements.validation_state.value === "SUPPORTED";
+    form.elements.basis_explanation.labels[0].firstChild.textContent = needsExplanation
+      ? "If Supported, explain why the selected evidence is sufficient despite the challenges or qualifications"
+      : "Explain competing accounts or any exception to the usual source support";
+    if (!pending.length && !creation && !request) baseRevision = s.revisions.INCIDENT[caseId];
+    const status = form.querySelector("[data-label-review-status]");
+    status.textContent = sameRevision && sameEvidence ? "Evidence is up to date." :
+      "Evidence changed. Check the saved links and confirm your review again.";
+    try {
+      const snapshot = await evidenceCorrections(store, caseId);
+      const correction = evidenceLabelStatus(snapshot, claimId);
+      if (correction && snapshot.revision === s.revisions.INCIDENT[caseId])
+        status.prepend(correction + " ");
+      else if (snapshot.revision !== s.revisions.INCIDENT[caseId])
+        status.append(" Shared research changed during refresh. Refresh evidence again before submitting.");
+    } catch {
+      status.append(" Correction status could not be loaded. Refresh again to check it.");
+    }
+    if (!dialog.contains(form)) return;
+    form.querySelector('[data-action="refresh-review-evidence"]').focus();
+    polishPresentation(dialog);
+    draw();
   }
   function sourceState(cid, includePrivate = true) {
     const ds = clone(visibleState());
@@ -833,32 +905,12 @@ export function mountWorkspace(
         : "Phase 2 approval recorded. The current eligible record is available in Validated Incidents.";
     draw();
   }
-  async function exportValidated(context = false) {
+  async function exportContextMeasures() {
     await refresh();
-    const count = P2D.repositoryRecords(s).length,
-      csv = context ? P2D.contextMeasuresCSV(s) : P2D.validatedIncidentsCSV(s),
-      name = context
-        ? "validated_context_measures_" +
-          new Date().toISOString().slice(0, 10) +
-          ".csv"
-        : P2D.csvFilename(new Date());
-    const url = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notice = context
-      ? "Context measures CSV exported from currently approved incidents."
-      : "CSV exported: " +
-        count +
-        " currently approved incident" +
-        (count === 1 ? "" : "s") +
-        ". Unknown values remain unknown.";
+    const csv = P2D.contextMeasuresCSV(s);
+    const filename = "validated_context_measures_" + new Date().toISOString().slice(0, 10) + ".csv";
+    saveExportBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), filename);
+    notice = "Context measures CSV exported from currently approved incidents.";
     draw();
   }
 
@@ -886,12 +938,320 @@ export function mountWorkspace(
     }
     return response;
   }
-  async function prepareGIS(mode) {
-    gisPreview = null;
-    modal("Preparing GIS export", '<p role="status">Checking current approvals, locations, dates and evidence… A large Full Fact export can take a minute or longer. Keep this tab open.</p>');
+  const periodicalReports = {
+    simplified: {
+      title: "Simplified Periodical Export",
+      description: "Incident date, facility identity, closure duration, facility coordinates, casualties, and their citations.",
+    },
+    full: {
+      title: "Full Fact Periodical Export",
+      description: "Everything in the simplified report, plus every other recorded finding and its citations.",
+    },
+  };
+
+  const periodicalScopes = {
+    verified: {
+      label: "Verified Only",
+      description: "Includes findings supported by a current human review, their accepted evidence, and reviewed facility coordinates. Event and facility IDs remain available for reference.",
+    },
+    all: {
+      label: "Verified and Unverified",
+      description: "Includes recorded findings still under review along with verified findings. Each finding keeps its review status and linked evidence.",
+    },
+  };
+
+  function periodicalReportDialog(selectedReport) {
+    modal("Export Periodical Data", `
+      <div class="periodical-export-chooser">
+        <h3 id="periodical-report-heading" tabindex="-1">Choose a report</h3>
+        <div class="periodical-export-options" role="group" aria-labelledby="periodical-report-heading">
+          ${Object.entries(periodicalReports).map(([report, option]) => `<div class="periodical-export-option">
+            <button type="button" data-action="select-periodical-report" data-id="${report}" aria-describedby="periodical-report-${report}">${h(option.title)}</button>
+            <p id="periodical-report-${report}" class="subtle">${h(option.description)}</p>
+          </div>`).join("")}
+        </div>
+      </div>`);
+    const focus = Object.hasOwn(periodicalReports, selectedReport)
+      ? dialog.querySelector('[data-action="select-periodical-report"][data-id="' + selectedReport + '"]')
+      : dialog.querySelector("#periodical-report-heading");
+    focus?.focus();
+  }
+
+  function periodicalExportDialog(report, selectedScope) {
+    if (!Object.hasOwn(periodicalReports, report)) return;
+    const { title } = periodicalReports[report];
+    modal("Export Periodical Data", `
+      <div class="periodical-export-chooser" data-periodical-report="${report}">
+        <p data-periodical-export-selection><strong>${h(title)}</strong></p>
+        <h3 id="periodical-scope-heading" tabindex="-1">Choose which findings to include</h3>
+        <div class="periodical-export-options" role="group" aria-labelledby="periodical-scope-heading">
+          ${Object.entries(periodicalScopes).map(([scope, option]) => `<div class="periodical-export-option">
+            <button type="button" data-action="select-periodical-scope" data-id="${scope}" aria-describedby="periodical-scope-${scope}">${h(option.label)}</button>
+            <p id="periodical-scope-${scope}" class="subtle">${h(option.description)}</p>
+          </div>`).join("")}
+        </div>
+        <button type="button" data-action="back-periodical-report">Back</button>
+      </div>`);
+    const focus = Object.hasOwn(periodicalScopes, selectedScope)
+      ? dialog.querySelector('[data-action="select-periodical-scope"][data-id="' + selectedScope + '"]')
+      : dialog.querySelector("#periodical-scope-heading");
+    focus?.focus();
+  }
+
+  async function periodicalFormatDialog(report, scope, savedView = null) {
+    if (!Object.hasOwn(periodicalReports, report) || !Object.hasOwn(periodicalScopes, scope)) return;
+    const verified = scope === "verified";
+    const dateRule = report === "simplified" ? " This report requires a verified incident date or date range." : "";
+    modal("Export Periodical Data", `
+      <div class="periodical-export-chooser" data-periodical-report="${report}" data-periodical-scope="${scope}">
+        <p data-periodical-export-selection><strong>${h(periodicalReports[report].title)}</strong> · ${h(periodicalScopes[scope].label)}</p>
+        <p data-periodical-export-summary role="status">Checking snapshot details…</p>
+        <button type="button" data-action="retry-periodical-summary" hidden>Refresh snapshot details</button>
+        <p data-periodical-export-status role="status"></p>
+        <div data-periodical-format-panel>
+          <h3 id="periodical-format-heading" tabindex="-1">Choose a file format</h3>
+          <div class="periodical-export-options" role="group" aria-labelledby="periodical-format-heading">
+            <div class="periodical-export-option">
+              <button class="primary" type="button" data-action="download-periodical-export" data-format="xlsx" data-periodical-export-control aria-describedby="periodical-excel-help" disabled>Download Excel report</button>
+              <p id="periodical-excel-help" class="subtle">A workbook for reading and reviewing findings and citations. Green marks current human validation. Orange marks findings that need attention.</p>
+            </div>
+            ${verified ? `<div class="periodical-export-option">
+              <button type="button" data-action="open-periodical-arcgis" data-periodical-export-control aria-describedby="periodical-csv-help" disabled>Download ArcGIS CSV</button>
+              <p id="periodical-csv-help" class="subtle">Choose a verified event table or approved facility points.</p>
+            </div>` : ""}
+          </div>
+          <button type="button" data-action="back-periodical-scope">Back</button>
+        </div>
+        ${verified ? `<div data-periodical-arcgis-panel hidden>
+          <h3 id="periodical-arcgis-heading" tabindex="-1">Choose an ArcGIS CSV</h3>
+          <div class="periodical-export-options" role="group" aria-labelledby="periodical-arcgis-heading">
+            <div class="periodical-export-option">
+              <button class="primary" type="button" data-action="download-periodical-export" data-format="arcgis" data-periodical-export-control aria-describedby="periodical-event-table-help" disabled>Verified event table</button>
+              <p id="periodical-event-table-help" class="subtle">One row per event from the same snapshot as the Excel report. The ZIP contains the CSV and schema.ini. Extract both files into the same folder, then add the CSV in ArcGIS Pro.</p>
+            </div>
+            <div class="periodical-export-option">
+              <button type="button" data-action="open-periodical-approved-points" data-periodical-export-control aria-describedby="periodical-approved-points-help" disabled>Approved facility points</button>
+              <p id="periodical-approved-points-help" class="subtle">One point per qualifying facility and approved incident, with verified location and attack evidence.${dateRule} Opens the GIS export summary and verification receipt.</p>
+            </div>
+          </div>
+          <button type="button" data-action="back-periodical-format">Back</button>
+        </div>` : ""}
+      </div>`);
+    if (savedView) {
+      const summary = dialog.querySelector("[data-periodical-export-summary]");
+      summary.dataset.snapshotId = savedView.snapshotId;
+      summary.textContent = savedView.summaryText;
+      for (const button of dialog.querySelectorAll("[data-periodical-export-control]"))
+        button.disabled = false;
+      showPeriodicalArcgisChoices(true, '[data-action="open-periodical-approved-points"]');
+    } else {
+      dialog.querySelector("#periodical-format-heading")?.focus();
+      await loadPeriodicalExportSummary();
+    }
+  }
+
+  function showPeriodicalArcgisChoices(open, focusSelector) {
+    const format = dialog.querySelector("[data-periodical-format-panel]");
+    const arcgis = dialog.querySelector("[data-periodical-arcgis-panel]");
+    if (!format || !arcgis) return;
+    format.hidden = open;
+    arcgis.hidden = !open;
+    const focus = dialog.querySelector(focusSelector);
+    const refresh = dialog.querySelector('[data-action="retry-periodical-summary"]:not([hidden])');
+    (focus?.disabled ? refresh ?? dialog.querySelector("#periodical-format-heading") : focus)?.focus();
+  }
+
+  async function periodicalExportRequest(format, report, scope, snapshotId) {
+    const params = new URLSearchParams({ format, report, scope });
+    if (snapshotId) params.set("snapshot", snapshotId);
+    const response = await fetch("/api/periodical-export?" + params, { cache: "no-store" });
+    if (response.ok) return response;
+    const error = await response.json().catch(() => ({}));
+    const accessMessage = response.status === 401
+      ? "Sign in again to download shared research."
+      : response.status === 403 ? "An active workspace account is required to download shared research." : "";
+    const failure = Error(accessMessage || error?.message || "The export is unavailable. Try again.");
+    failure.snapshotChanged = response.status === 409;
+    throw failure;
+  }
+
+  function periodicalDateText(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+    const instant = new Date(value + "T00:00:00Z");
+    if (!Number.isFinite(instant.getTime()) || instant.toISOString().slice(0, 10) !== value) return "";
+    return new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(instant);
+  }
+
+  function periodicalCaptureText(value) {
+    if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return "";
+    const time = new Intl.DateTimeFormat("en-US", {
+      dateStyle: "long", timeStyle: "short", timeZone: "America/New_York",
+    }).format(new Date(value));
+    return " Research state as of " + time + " Eastern.";
+  }
+
+  async function loadPeriodicalExportSummary() {
+    const summary = dialog.querySelector("[data-periodical-export-summary]");
+    const retry = dialog.querySelector("[data-action=retry-periodical-summary]");
+    const errorBox = dialog.querySelector(".form-error");
+    const chooser = summary?.closest("[data-periodical-scope]");
+    if (!chooser || !retry || !errorBox) return;
+    const { periodicalReport: report, periodicalScope: scope } = chooser.dataset;
+    retry.hidden = true;
+    errorBox.hidden = true;
+    delete summary.dataset.snapshotId;
+    summary.textContent = "Checking snapshot details…";
+    try {
+      const details = await (await periodicalExportRequest("summary", report, scope)).json();
+      const date = periodicalDateText(details.snapshot_date);
+      if (!date || details.report !== report || details.scope !== scope ||
+        !Number.isSafeInteger(details.fact_count) || details.fact_count < 0 ||
+        !Number.isSafeInteger(details.evidence_binding_missing_count) || details.evidence_binding_missing_count < 0 ||
+        !Number.isSafeInteger(details.event_count) || details.event_count < 0 ||
+        !Number.isSafeInteger(details.mappable_event_count) || details.mappable_event_count < 0 ||
+        details.mappable_event_count > details.event_count || typeof details.saved_fixture !== "boolean" ||
+        typeof details.snapshot_id !== "string" || !/^[a-f0-9]{64}$/.test(details.snapshot_id))
+        throw Error("The snapshot details were incomplete. Try again.");
+      if (!summary.isConnected || !dialog.open) return;
+      summary.dataset.snapshotId = details.snapshot_id;
+      const eventCount = details.event_count === 1 ? "1 event" : details.event_count + " events";
+      const factCount = details.fact_count === 1 ? "1 finding" : details.fact_count + " findings";
+      const empty = details.event_count === 0
+        ? " No events match this selection. The export will contain headers only."
+        : details.fact_count === 0 ? " No findings match this selection. Any eligible event and location references are included." : "";
+      const mode = details.saved_fixture
+        ? " Downloads use this saved snapshot."
+        : " If shared research changes, refresh these details to export the updated snapshot.";
+      const missingEvidence = details.evidence_binding_missing_count > 0
+        ? " " + details.evidence_binding_missing_count + (details.evidence_binding_missing_count === 1 ? " reviewed finding has" : " reviewed findings have") +
+          " no saved record of the evidence selected during verification."
+        : "";
+      summary.textContent = eventCount + " · " + factCount + " · " +
+        details.mappable_event_count + " mappable. Snapshot date " + date + " (Eastern)." +
+        periodicalCaptureText(details.captured_at) + empty + missingEvidence + mode;
+      for (const button of chooser.querySelectorAll("[data-periodical-export-control]"))
+        button.disabled = false;
+    } catch (error) {
+      summary.textContent = "";
+      if (!summary.isConnected || !dialog.open) return;
+      errorBox.textContent = error?.message || "The snapshot details are unavailable. Try again.";
+      errorBox.hidden = false;
+      retry.hidden = false;
+    }
+  }
+
+  async function downloadPeriodicalExport(format) {
+    const status = dialog.querySelector("[data-periodical-export-status]");
+    const summary = dialog.querySelector("[data-periodical-export-summary]");
+    const retry = dialog.querySelector("[data-action=retry-periodical-summary]");
+    const errorBox = dialog.querySelector(".form-error");
+    const snapshotId = summary?.dataset.snapshotId;
+    const chooser = summary?.closest("[data-periodical-scope]");
+    if (!status || !retry || !errorBox || !chooser || !snapshotId || !["xlsx", "arcgis"].includes(format)) return;
+    const { periodicalReport: report, periodicalScope: scope } = chooser.dataset;
+    if (format === "arcgis" && scope !== "verified") return;
+    const buttons = [...chooser.querySelectorAll("[data-periodical-export-control]")];
+    const back = [...chooser.querySelectorAll("[data-action=back-periodical-format], [data-action=back-periodical-scope]")];
+    errorBox.hidden = true;
+    status.textContent = "Preparing the snapshot…";
+    for (const button of [...buttons, ...back]) button.disabled = true;
+    try {
+      const response = await periodicalExportRequest(format, report, scope, snapshotId);
+      const filename = response.headers.get("content-disposition")
+        ?.match(/filename="([a-zA-Z0-9_.-]+)"/)?.[1];
+      const extension = format === "xlsx" ? "xlsx" : "zip";
+      const contentType = extension === "xlsx"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/zip";
+      if (!filename?.endsWith("." + extension) ||
+        response.headers.get("content-type")?.split(";")[0] !== contentType ||
+        response.headers.get("X-Periodical-Snapshot-Id") !== snapshotId)
+        throw Error("The export response was incomplete. Try again.");
+      const blob = await response.blob();
+      if (!blob.size) throw Error("The export response was empty. Try again.");
+      if (!dialog.open || !status.isConnected) return;
+      saveExportBlob(blob, filename);
+      const date = periodicalDateText(response.headers.get("X-Periodical-Snapshot-Date"));
+      status.textContent = "Download started." + (date
+        ? " Snapshot date " + date + " (Eastern)." +
+          periodicalCaptureText(response.headers.get("X-Periodical-Captured-At"))
+        : "");
+      if (dialog.open && status.isConnected) celebratePeriodicalDownload(chooser);
+    } catch (error) {
+      status.textContent = "";
+      if (dialog.open && errorBox.isConnected) {
+        if (error?.snapshotChanged) {
+          delete summary.dataset.snapshotId;
+          summary.textContent = "This snapshot needs to be refreshed.";
+          retry.hidden = false;
+          retry.focus({ preventScroll: true });
+        }
+        errorBox.textContent = error?.message || "The export is unavailable. Try again.";
+        errorBox.hidden = false;
+        errorBox.scrollIntoView?.({ block: "nearest" });
+      }
+    } finally {
+      buttons.forEach(button => { button.disabled = !summary.dataset.snapshotId; });
+      back.forEach(button => { button.disabled = false; });
+    }
+  }
+
+  function celebratePeriodicalDownload(chooser) {
+    const palette = ["#0d7359", "#e34242", "#f2b321", "#497be0", "#ee62a1"];
+    chooser.querySelector(".periodical-export-celebration")?.remove();
+    const celebration = document.createElement("div");
+    celebration.className = "periodical-export-celebration";
+    celebration.setAttribute("aria-hidden", "true");
+    const plate = document.createElement("span");
+    plate.className = "periodical-export-bam";
+    plate.textContent = "BAM!";
+    celebration.append(plate);
+    for (let index = 0; index < 16; index += 1) {
+      const piece = document.createElement("span");
+      piece.className = "periodical-export-confetti";
+      const angle = index * Math.PI / 8;
+      const distance = 74 + (index % 4) * 21;
+      piece.style.setProperty("--confetti-x", (Math.cos(angle) * distance).toFixed(1) + "px");
+      piece.style.setProperty("--confetti-y", (Math.sin(angle) * distance * 0.65).toFixed(1) + "px");
+      piece.style.setProperty("--confetti-turn", ((index % 2 ? 1 : -1) * (120 + index * 26)) + "deg");
+      piece.style.setProperty("--confetti-color", palette[index % palette.length]);
+      celebration.append(piece);
+    }
+    chooser.append(celebration);
+    setTimeout(() => celebration.remove(), 1400);
+  }
+
+  function saveExportBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function openPeriodicalApprovedPoints() {
+    const summary = dialog.querySelector("[data-periodical-export-summary]");
+    const chooser = summary?.closest("[data-periodical-scope='verified']");
+    if (!chooser || !summary.dataset.snapshotId) return;
+    await prepareGIS(chooser.dataset.periodicalReport, {
+      snapshotId: summary.dataset.snapshotId,
+      summaryText: summary.textContent,
+    });
+  }
+
+  async function prepareGIS(mode, periodicalReturn = null) {
+    const back = periodicalReturn ? '<button type="button" data-action="back-from-periodical-gis">Back</button>' : "";
+    const close = '<button type="button" data-action="close-dialog">Close</button>';
+    gisPreview = { mode, result: null, periodicalReturn };
+    modal("Preparing GIS export", '<p data-gis-export-loading role="status">Checking current approvals, locations, dates and evidence… A large Full Fact export can take a minute or longer. Keep this tab open.</p>' + back);
+    const loading = dialog.querySelector("[data-gis-export-loading]");
     try {
       const result = await (await gisRequest(mode, "summary")).json();
-      gisPreview = { mode, result };
+      if (!dialog.open || !loading.isConnected) return;
+      gisPreview = { mode, result, periodicalReturn };
       const count = result.facility_incident_features_exported;
       const title = mode === "full" ? "Full Fact GIS Export" : "Date and Incident GIS Export (Simplified)";
       modal(title, `<p>${h(result.empty_reason || "This file uses the current validated snapshot. Downloads are checked again if research changes.")}</p>
@@ -908,17 +1268,18 @@ export function mountWorkspace(
         <p>Long findings and paired citations use numbered continuation columns. Follow the supplied ArcGIS import and pop-up instructions; default date inference can introduce timestamps.</p></details>
         <p class="gis-download-status" role="status" aria-live="polite">${count ? "Export available. The file will be verified before it is saved." : ""}</p>
         ${mode === "full" ? '<p>The companion presentation ZIP is deferred pending hosted delivery validation. The existing CSV and verification receipt remain available.</p>' : ""}
-        <div class="dialog-actions"><button data-action="close-dialog">Close</button><button data-action="download-gis-receipt" ${count?"":"disabled"}>Download verification receipt</button><button class="primary" data-action="download-gis-csv" ${count?"":"disabled"}>Download CSV</button></div>`);
+        <div class="dialog-actions">${back || close}<button data-action="download-gis-receipt" ${count?"":"disabled"}>Download verification receipt</button><button class="primary" data-action="download-gis-csv" ${count?"":"disabled"}>Download CSV</button></div>`);
     } catch(error) {
-      modal("GIS export unavailable", `<p role="alert">${h(error.message)}</p><button data-action="close-dialog">Close</button>`);
+      if (!dialog.open || !loading.isConnected) return;
+      modal("GIS export unavailable", `<p role="alert">${h(error.message)}</p>${back || close}`);
     }
   }
   async function downloadGIS(format) {
-    if (!gisPreview) throw Error("Open the GIS export summary first.");
-    const { mode, result } = gisPreview;
+    if (!gisPreview?.result) throw Error("Open the GIS export summary first.");
+    const { mode, result, periodicalReturn } = gisPreview;
     const status = dialog.querySelector(".gis-download-status");
     const show = text => { if (status) status.textContent = text; };
-    const buttons = [...dialog.querySelectorAll('[data-action^="download-gis-"]')];
+    const buttons = [...dialog.querySelectorAll('[data-action^="download-gis-"], [data-action="back-from-periodical-gis"]')];
     buttons.forEach(button => { button.disabled = true; });
     try {
       show("Preparing export. A large Full Fact file can take a minute or longer. Keep this tab open.");
@@ -934,6 +1295,7 @@ export function mountWorkspace(
       }
       show("Checking that approvals and research are still current…");
       await gisRequest(mode, "verify", result.receipt);
+      if (periodicalReturn && (!dialog.open || !status?.isConnected)) return;
       saveVerifiedGISBlob(blob, filename);
       show(format !== "receipt" ? "Download completed and verified. Your browser may ask where to save the file." : "Verification receipt saved for this unchanged snapshot.");
     } catch (error) {
@@ -1387,6 +1749,29 @@ export function mountWorkspace(
         sourceInspection.resume();
         return;
       }
+      if (action === "change-evidence-label") {
+        const claimId = el.dataset.claim;
+        const fromReview = Boolean(el.closest("#fact-form"));
+        const lock = factLock(s, claimId);
+        if (lock.locked) throw Error(lockMessage(lock));
+        if (!current || !["incident", "supervisor-detail"].includes(view) || pendingHistory) return;
+        const caseId = current;
+        const review = el.closest("#fact-form");
+        await labelDialog.open(s, caseId, claimId, el.dataset.relation, (message) => {
+          if (!alive || current !== caseId) return;
+          const status = review?.isConnected && review.querySelector("[data-label-review-status]");
+          if (status) status.textContent = message;
+          else {
+            notice = message;
+            draw();
+          }
+        }, { fromReview, trigger: el, stillCurrent: () => alive && current === caseId && !pendingHistory && el.isConnected });
+        return;
+      }
+      if (action === "refresh-review-evidence") {
+        await refreshReviewEvidence();
+        return;
+      }
       if (action === "disposition-resume") {
         const saved = dispositionResume;
         if (!saved) throw Error("Open the decision again.");
@@ -1618,8 +2003,29 @@ export function mountWorkspace(
       else if (action === "phase2-revoke")
         await phase2Dialog(el.dataset.id, true);
       else if (action === "submit-phase2") await submitPhase2();
-      else if (action === "export-validated-csv") await exportValidated();
-      else if (action === "export-context-csv") await exportValidated(true);
+      else if (action === "export-context-csv") await exportContextMeasures();
+      else if (action === "export-periodical-data") periodicalReportDialog();
+      else if (action === "select-periodical-report") periodicalExportDialog(el.dataset.id);
+      else if (action === "back-periodical-report")
+        periodicalReportDialog(el.closest("[data-periodical-report]")?.dataset.periodicalReport);
+      else if (action === "select-periodical-scope")
+        await periodicalFormatDialog(el.closest("[data-periodical-report]")?.dataset.periodicalReport, el.dataset.id);
+      else if (action === "back-periodical-scope") {
+        const { periodicalReport: report, periodicalScope: scope } = el.closest("[data-periodical-report]").dataset;
+        periodicalExportDialog(report, scope);
+      }
+      else if (action === "open-periodical-arcgis")
+        showPeriodicalArcgisChoices(true, "#periodical-arcgis-heading");
+      else if (action === "back-periodical-format")
+        showPeriodicalArcgisChoices(false, '[data-action="open-periodical-arcgis"]');
+      else if (action === "open-periodical-approved-points") await openPeriodicalApprovedPoints();
+      else if (action === "back-from-periodical-gis" && gisPreview?.periodicalReturn) {
+        const { mode, periodicalReturn } = gisPreview;
+        gisPreview = null;
+        await periodicalFormatDialog(mode, "verified", periodicalReturn);
+      }
+      else if (action === "retry-periodical-summary") await loadPeriodicalExportSummary();
+      else if (action === "download-periodical-export") await downloadPeriodicalExport(el.dataset.format);
       else if (action === "export-gis-full") await prepareGIS("full");
       else if (action === "download-gis-package") throw Error("The companion presentation ZIP is deferred pending hosted delivery validation. The existing CSV downloads remain available.");
       else if (action === "export-gis-simplified") await prepareGIS("simplified");
@@ -2356,6 +2762,11 @@ export function mountWorkspace(
       grid = document.createElement("div"),
       left = document.createElement("div"),
       right = document.createElement("aside");
+    if (includePrivate && !creation && current && Object.hasOwn(s.revisions.CLAIM, c.claim_id)) {
+      form.dataset.reviewFinding = reviewFindingSignature(c);
+      form.querySelector('fieldset[aria-label="Evidence for approval"]').outerHTML =
+        renderApprovalEvidence(s, c, null, { labelAction: true });
+    }
     grid.className = "dialog-grid";
     right.innerHTML = "<h3>Review result and verified value</h3>";
     for (const selector of [
@@ -2637,6 +3048,7 @@ export function mountWorkspace(
         s &&
         !busy &&
         !dialog.open &&
+        !labelDialog.isOpen() &&
         pending.length === 0 &&
         !creation &&
         !facilityCommand &&
@@ -2737,6 +3149,7 @@ export function mountWorkspace(
     dialog.removeEventListener('close',closeForm);
     disclosures.dispose();
     sourceInspection.dispose();
+    labelDialog.dispose();
     stopRefresh();
     for (const [type, handler] of listeners)
       container.removeEventListener(type, handler);
