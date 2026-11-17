@@ -10,6 +10,9 @@
 | October 8–30 | I chose to carry the lab’s existing article research into the new workflow. I kept exploratory work in a shared spreadsheet and used the website for incidents and evidence ready for review. I also worked through sign-in, evidence display, draft editing, and an ArcGIS export. |
 | November 3–7 | Lab feedback led to independent review of proposed corrections, clearer draft and submission states, and improvements to assignments. Account administration gained a separate authentication check. |
 | November 6–10 | I tested a second research engine that kept discovery and verification separate. A supervised benchmark found all nine reference leads and recovered eight episodes exactly. The test used Ukraine education cases. |
-| November 11–12 | I improved the entry point for reviewing facts and checked the deployed workflow. I then prepared the synthetic portfolio and verified its setup across Windows, Ubuntu, and macOS. |
+| November 11–12 | I put fact review, saved source evidence, and next research steps within easier reach and checked the deployed workflow. I then prepared the synthetic portfolio and verified its setup across Windows, Ubuntu, and macOS. |
+| November 13 | I put **Change evidence label** inside fact review so researchers could ask a separate Supervisor to review how an excerpt relates to a finding without editing the finding itself. |
+| November 16 | I added **Export Periodical Data** so the lab could read the shared findings and citations in one Excel sheet or use the ArcGIS CSV for mapping. |
+| November 17 | I gave the lab **Simplified** and **Full Fact** reports, each with a **Verified Only** option and a **Verified and Unverified** option. I grouped the export options and packaged the verified ArcGIS event tables with the field schema needed to import them. |
 
 [Project story](PROJECT_STORY.md) · [Security and verification](SECURITY.md)

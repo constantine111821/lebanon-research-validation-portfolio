@@ -61,7 +61,7 @@ Select **Verified Only** to use findings that have a current supporting review, 
 
 Under **Verified Only**, choose **Download ArcGIS CSV**, then **Verified event table**. Extract the CSV and the matching `schema.ini` into the same directory. Keep the CSV filename and add it to ArcGIS Pro. Use `Event_ID` to join it to **Event ID** in Excel. For rows with coordinates, use **XY Table To Point** with `Longitude` as X, `Latitude` as Y, and WGS 84 (EPSG:4326).
 
-On a fresh demo fixture, the verified table includes one fictional event with blank coordinates. Choose **Approved facility points** for the separate GIS workflow with location approval and evidence checks. Its export summary shows any exclusions. The [November release history](../CHANGELOG.md) records the ArcGIS Pro checks on synthetic data.
+On a fresh demo fixture, the verified table includes one fictional event with blank coordinates. Choose **Approved facility points** for the separate GIS workflow with location approval and evidence checks. Its export summary shows any exclusions. The [expanded timeline](TIMELINE_EXPANDED.md#november-1617--i-gave-the-lab-exports-for-review-and-mapping) records the ArcGIS Pro checks on synthetic data.
 
 ## Run the automated checks
 

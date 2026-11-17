@@ -104,8 +104,20 @@ In November I asked for another handoff before a Guide ran out of room. I also q
 
 ## November 11–12 | I wanted the final reviewer to be able to see and reproduce the work
 
-The incident page still needed a clearer entry point. I asked for **Review facts and evidence**, **Next research steps**, and the coordinate action to be easy to find. I wanted clickable help for first-time users, visible cues for required fields, and the exact saved excerpt alongside the finding it supported. An exact-commit defensive review preceded the application release. I checked the live workflow in an authorized session. The Analytics view could show an uncaptured week, which was a separate matter from saving a real report.
+On November 11, the incident page gained a clearer entry point. I asked for **Review facts and evidence**, **Next research steps**, and the coordinate action to be easy to find. I wanted clickable help for first-time users, visible cues for required fields, and the exact saved excerpt alongside the finding it supported. An exact-commit defensive review preceded the application release. I checked the live workflow in an authorized session. The Analytics view could show an uncaptured week, which was a separate matter from saving a real report.
 
 I wanted someone new to the project to be able to run it from scratch. I put together a separate portfolio with synthetic data and verified the setup on Windows, Ubuntu and macOS. In the operational project, a defensive assessment led to dependency and failure-handling fixes. I asked for the build checks to be rerun so the downloaded evidence could be matched to the source that had actually been tested.
 
 When I read that first expanded history, I still recognized the features more easily than I recognized my own experience. I went back to the Guide conversations to recover the choices, setbacks and changes of direction that shaped the project. This timeline brings those back into the story.
+
+## November 13 | I brought evidence corrections into fact review
+
+I made it easier for researchers to ask for a change to an evidence label. **Change evidence label** became available beside saved evidence and inside **Review fact**. A researcher could inspect the passage, choose how it related to the finding, and give a reason. A different Supervisor reviewed the request. Once it was accepted, the researcher could refresh the evidence in the review form.
+
+## November 16–17 | I gave the lab exports for review and mapping
+
+On November 16, I added **Export Periodical Data** so the lab could use the same findings for a report and for mapping. The Excel report put findings, review status, and citations together on one sheet. The ArcGIS CSV gave the lab a matching event table for mapping.
+
+On November 17, I gave both the **Simplified** and **Full Fact** reports a **Verified Only** option and a **Verified and Unverified** option. I grouped the export controls and kept the approved facility point workflow available. The verified ArcGIS event table uses the same snapshot and event IDs as Excel. It comes in a ZIP with the CSV and a matching `schema.ini` file so ArcGIS can read the field types even when a column is blank.
+
+To check that the files worked outside the workspace, we imported four synthetic ZIPs into ArcGIS Pro 3.7. The checks covered both report types, blank measures and documented zeros. Each import joined 18 event rows to Excel and created 15 WGS 84 points. Three rows per import retained blank coordinates. The schema preserved calendar text and numeric fields, including wholly blank numeric columns and documented zeros. All fields and cells matched the synthetic source data. [Try the local export walkthrough](LOCAL_REVIEW.md#download-a-periodical-report)
